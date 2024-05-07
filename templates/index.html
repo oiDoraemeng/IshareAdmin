@@ -1,0 +1,87 @@
+<!doctype html>
+<html class="x-admin-sm">
+<head>
+    <title></title>
+
+    {% include 'common/header.html' %}
+    {% include 'common/footer.html' %}
+
+</head>
+<body class="index">
+
+<div>欢迎 {{ user.username }}登录</div>
+<h1>系统所有用户</h1>
+<button onclick="addUser()">添加用户</button>
+<button onclick="logout()">退出登录</button>
+<table>
+    <thead>
+    <td>用户名</td>
+    <td>操作</td>
+    </thead>
+
+    {% for u in userList %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>
+                <button onclick="deleteUser('{{ u.id }}')">删除</button>
+            </td>
+        </tr>
+    {% endfor %}
+
+</table>
+<script>
+    let MODULE_PATH = '/user/'
+    let token = sessionStorage.getItem('token')//从sessionStorage拿令牌
+
+    //删除用户
+    function deleteUser(userId) {
+        $.ajax({
+            url: MODULE_PATH + 'remove/' + userId,
+            dataType: 'json',
+            beforeSend: function (XMLHttpRequest) {
+                XMLHttpRequest.setRequestHeader('token', token);
+            },
+            type: 'delete',
+            success: function (result) {
+                console.log(result.success)
+                if (result.success) {
+                    alert('删除成功')
+                    location.reload()
+                } else {
+                    alert('删除失败 ' + result.msg)
+                }
+
+            }
+        })
+    }
+
+    //跳转到添加用户界面
+    function addUser() {
+        location.href = MODULE_PATH + 'add?token=' + token
+    }
+
+    //退出登录
+    function logout() {
+        $.ajax({
+            url: 'login/logout',
+            dataType: 'json',
+            beforeSend: function (XMLHttpRequest) {
+                XMLHttpRequest.setRequestHeader('token', token);
+            },
+            type: 'post',
+            success: function (result) {
+
+                console.log(result.success)
+                if (result.success) {
+                    alert('退出系统成功')
+
+                }
+                sessionStorage.removeItem('token')
+                location.reload()
+
+            }
+        })
+    }
+</script>
+</body>
+</html>

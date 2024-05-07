@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户修改</title>
+    {% include 'common/header.html' %}
+    {% include 'common/footer.html' %}
+    <style>
+        .mainBox {
+            width: 100%;
+            top: 0px;
+            left: 0px;
+            bottom: 50px;
+            overflow: auto;
+            padding-bottom: 50px;
+        }
+
+        .bottom {
+            width: 100%;
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            height: 50px;
+            line-height: 50px;
+            background-color: #F8F8F8;
+            border-top: 1px solid #eee;
+        }
+
+        .button-container {
+            position: absolute;
+            right: 15px;
+        }
+
+        .main-container {
+            margin: 15px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: white;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #E6E6E6;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d5d5d5;
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: #f6f6f6;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="main-container">
+
+                <div class="layui-form-item layui-hide">
+                    <label class="layui-form-label">id</label>
+                    <div class="layui-input-block">
+                        <input type="text" value="{{ data.id }}" name="id" lay-verify="title"
+                               autocomplete="off" placeholder="请输入标题" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"><span class="x-red">*</span>用户名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="username" value="{{ data.username }}" lay-verify="required|username"
+                               autocomplete="off"
+                               placeholder="用户名" class="layui-input">
+                    </div>
+                </div>
+
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label"><span class="x-red">*</span>密码</label>
+                    <div class="layui-input-block">
+                        <input type="password" name="pwd" value="{{ data.pwd }}" lay-verify="required|pwd"
+                               autocomplete="off"
+                               placeholder="用户名" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">角色</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="role" {% if data.role=='admin' %} checked {% endif %} value="admin"
+                               title="管理员">
+                        <input type="radio" name="role" {% if data.role=='common' %} checked {% endif %} value="common"
+                               title="普通用户">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="enable" {% if data.enable=='1' %} checked {% endif %} value="1"
+                               title="启用">
+                        <input type="radio" name="enable" {% if data.enable=='0' %} checked {% endif %} value="0"
+                               title="禁用">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <span><span class="x-red">*</span>必填</span>
+            <button type="submit" class="layui-btn layui-btn-sm" lay-submit=""
+                    lay-filter="update">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<script src="{{ url_for('static',filename='/js/csrf.js') }}"></script>
+<script>
+    layui.use(['form', 'laydate', 'jquery'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        var laydate = layui.laydate;
+
+        //模块接口访问位置
+        let MODULE_PATH = '/user/'
+        let token=sessionStorage.getItem('token')
+
+        //同时渲染多个时间选择控件
+        lay('.datetime-input').each(function () {
+            laydate.render({
+                elem: this,
+                trigger: 'click',
+                type: 'datetime'
+            });
+        });
+
+        //绑定表单提交按钮
+        form.on('submit(update)', function (data) {
+            //console.log(data)
+            //发送异步请求进行数据处理
+            $.ajax({
+                url: MODULE_PATH + 'update',
+                data: JSON.stringify(data.field),
+                dataType: 'json',
+                contentType: 'application/json',
+                beforeSend: function (XMLHttpRequest) {
+                    XMLHttpRequest.setRequestHeader('token', token);
+                },
+                type: 'put',
+                success: function (result) {
+                    if (result.success) {
+                        layer.msg(result.msg, {
+                            icon: 1,
+                            time: 1000
+                        }, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name)) //关闭当前页
+                            parent.layui.table.reload('user-table')
+                        })
+                    } else {
+                        layer.msg(result.msg, {
+                            icon: 2,
+                            time: 1000
+                        })
+                    }
+                }
+            })
+            return false
+        });
+
+        //自定义表单验证
+        form.verify({
+            myNumber: function (value, item) { //value：表单的值、item：表单的DOM对象
+
+                if (value != "" && isNaN(value)) {
+                    return '填写的值只能是数字';
+                }
+            },
+            myPhone: function (value, item) {
+                var reg = /^1\d{10}$/;
+                if (value != "" && !reg.test(value)) {
+                    return '请填写正确的电话号码';
+                }
+            },
+            username: function (value, item) { //value：表单的值、item：表单的DOM对象
+                if (!new RegExp("^[a-zA-Z0-9_\u4e00-\u9fa5\\s·]+$").test(value)) {
+                    return '用户名不能有特殊字符';
+                }
+                if (/(^\_)|(\__)|(\_+$)/.test(value)) {
+                    return '用户名首尾不能出现下划线\'_\'';
+                }
+                if (/^\d+\d+\d$/.test(value)) {
+                    return '用户名不能全为数字';
+                }
+
+            }
+
+            //我们既支持上述函数式的方式，也支持下述数组的形式
+            //数组的两个值分别代表：[正则匹配、匹配不符时的提示文字]
+            , pwd: [
+                /^[\S]{6,32}$/
+                , '密码必须6到32位，且不能出现空格'
+            ]
+        });
+    })
+</script>
+</body>
+</html>

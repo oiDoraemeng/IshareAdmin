@@ -1,0 +1,51 @@
+<!doctype html>
+<html class="x-admin-sm">
+<head>
+    <title>COVID-19可视化平台</title>
+    {% include 'common/header.html' %}
+    {% include 'common/footer.html' %}
+</head>
+<body>
+
+<div>
+    <form action='' onsubmit="return false">
+        <label>用户名：<input type="text" name="username" value=""></label><br>
+        <label>密码：<input type="password" name="pwd" value=""></label><br>
+        <input type="submit" value="登录" onclick="login()">
+    </form>
+</div>
+
+
+<script>
+    let MODULE_PATH = '/login/'
+
+    function login() {
+        let data = {
+            'username': $("input[name='username']").val(),
+            'pwd': $("input[name='pwd']").val()
+        }
+        console.log(data)
+        $.ajax({
+            url: MODULE_PATH + 'login',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            type: 'post',
+            success: function (result) {
+                console.log(result)
+                if (result.success) {
+                    alert('登陆成功')
+                    let token=result.data.token;
+                    sessionStorage.setItem('token',token)
+                    //跳到首页
+                    location.href = '/?token=' + token
+                } else {
+                    alert(result.msg)
+                }
+            }
+        })
+    }
+</script>
+
+</body>
+</html>

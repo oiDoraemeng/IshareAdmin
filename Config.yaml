@@ -1,0 +1,30 @@
+#基础配置
+base:
+  environment: dev #运行环境配置,参考值:dev,pro
+  host: 0.0.0.0 # 绑定ip地址
+  port: 5201 #运行端口
+
+#mongodb配置
+mongodb:
+  host: 127.0.0.1 #mongodb地址
+  port: 27017 #mongodb端口
+  database: CovidVisual #要连接的数据库名称
+  username: '' #当前数据库的用户名
+  password: '' #数据库的连接密码
+
+#系统根用户配置
+root:
+  username: 'root' #用户名
+  pwd: '123456' #密码
+
+#日志配置
+log:
+  filepath: /www/flask/IshareAdmin/log  # 日志文件夹
+  prefix_name: IshareAdmin # 日志文件前缀
+  level: error # 记录日志等级
+  filesize: 100 #日志文件大小,单位MB
+
+#词云设置
+wordCloud:
+  words: 热搜1 热搜2 热搜3 热搜4 热搜5 热搜6
+

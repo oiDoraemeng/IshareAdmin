@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户添加</title>
+    {% include 'common/header.html' %}
+    {% include 'common/footer.html' %}
+</head>
+<body>
+<form action='' onsubmit="return false">
+    <label>用户名：<input type="text" name="username" value=""></label><br>
+    <label>密码：<input type="password" name="pwd" value=""></label><br>
+    <input type="submit" value="添加" onclick="addUser()">
+</form>
+
+<script>
+    let MODULE_PATH = '/user/'
+    let token=sessionStorage.getItem('token')
+
+    //添加用户
+    function addUser() {
+        let data = {
+            'username': $("input[name='username']").val(),
+            'pwd': $("input[name='pwd']").val()
+        }
+        console.log(data)
+        $.ajax({
+            url: MODULE_PATH + 'save',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            beforeSend: function (XMLHttpRequest) {
+                XMLHttpRequest.setRequestHeader('token', token);
+            },
+            type: 'post',
+            success: function (result) {
+                console.log(result.success)
+                if (result.success) {
+                    alert('添加成功')
+                    //跳回首页
+                    location.href = '/?token=' + token
+                } else {
+                    alert('添加失败 ' + result.msg)
+                }
+            }
+        })
+    }
+</script>
+</body>
+</html>

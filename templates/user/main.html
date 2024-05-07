@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html class="x-admin-sm">
+
+<head>
+    <title>用户管理</title>
+    {% include 'common/header.html' %}
+    {% include 'common/footer.html' %}
+    <style>
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: white;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #E6E6E6;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d5d5d5;
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: #f6f6f6;
+        }
+
+        .layui-table-cell {
+            height: 36px;
+            line-height: 36px;
+        }
+    </style>
+
+</head>
+
+<body>
+<div style="margin-left: 15px;margin-right: 15px;">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <form class="layui-form" action="">
+                <div class="layui-form-item" style="margin-top: 5px;margin-bottom: -4px;">
+                    <label class="layui-form-label">账号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" placeholder="" class="layui-input">
+                    </div>
+
+                    <button class="layui-btn layui-btn-md layui-btn-primary" lay-submit lay-filter="query">
+                        <i class="layui-icon layui-icon-search"></i>
+                        查询
+                    </button>
+                    <button type="reset" class="layui-btn layui-btn-md">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                        重置
+                    </button>
+
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <table id="user-table" lay-filter="user-table"></table>
+        </div>
+    </div>
+</div>
+
+</body>
+
+
+<script type="text/html" id="templet-toolbar">
+    {% if authorize('admin',token) %}
+        <button class="layui-btn  layui-btn-md" lay-event="add">
+            <i class="layui-icon layui-icon-add-1"></i>
+            新增
+        </button>
+    {% endif %}
+
+    {% if authorize('admin', token) %}
+        <button class="layui-btn layui-btn-danger layui-btn-md" lay-event="batchRemove">
+            <i class="layui-icon layui-icon-delete"></i>
+            删除
+        </button>
+    {% endif %}
+</script>
+
+<script type="text/html" id="templet-bar">
+    {% if authorize('admin', token) %}
+        <button title="编辑" class="layui-btn  layui-btn-sm" lay-event="edit">
+            <i class="layui-icon layui-icon-edit"></i>
+        </button>
+    {% endif %}
+
+    {% if authorize('admin', token) %}
+        <button title="删除" class="layui-btn layui-btn-danger layui-btn-sm" lay-event="remove">
+            <i class="layui-icon layui-icon-delete"></i>
+        </button>
+    {% endif %}
+
+</script>
+
+<script type="text/html" id="templet-enable">
+    <input type="checkbox" {% if not authorize('admin', token) %}disabled {% endif %} name="enable" value="{{ "{{d.id}}" }}"
+           lay-skin="switch" lay-text="已启用|已禁用"
+           lay-filter="enable" {{ "{{# if(d.enable==1){ }} checked {{# } }}" }}  >
+</script>
+<script src="{{ url_for('static',filename='/js/csrf.js') }}"></script>
+<script>
+
+    layui.use(['table', 'form', 'jquery'], function () {
+        var table = layui.table;
+        let form = layui.form
+        let $ = layui.jquery
+
+        //模块接口访问位置
+        let MODULE_PATH = '/user/'
+        let token = sessionStorage.getItem('token')
+
+        //动态表格表头定义
+        let cols = [
+            [
+                {% if authorize('admin', token) %}
+                    {type: 'checkbox'}
+                {% endif %},
+                {title: '账号', field: 'username', align: 'center'},
+                {
+                    title: '角色', field: 'role', templet: function (data) {
+                        if (data.role == 'admin') {
+                            return '管理员'
+                        } else {
+                            return '普通用户'
+                        }
+                    }, align: 'center'
+                },
+                {title: '状态', field: 'enable', align: 'center', templet: '#templet-enable'},
+                {title: '操作', toolbar: '#templet-bar', align: 'center'}
+            ]
+        ];
+
+        height = document.body.clientHeight * 0.75
+        //加载表格
+        table.render({
+            elem: '#user-table',
+            url: MODULE_PATH + 'data?token=' + token,
+            page: true,
+            cols: cols,
+            cellMinWidth: 100,
+            height: height,
+            skin: 'line',
+            // size: 'lg',
+            even: true,
+            toolbar: '#templet-toolbar',
+            defaultToolbar: [{
+                title: '刷新表格',
+                layEvent: 'refresh',
+                icon: 'layui-icon-refresh',
+            }, 'filter', 'print', 'exports']
+        })
+
+        //监听每一行的按钮事件
+        table.on('tool(user-table)', function (obj) {
+            if (obj.event === 'remove') {
+                window.remove(obj)
+            } else if (obj.event === 'edit') {
+                window.edit(obj)
+            } else if (obj.event === 'resetPwd') {
+                window.resetPwd(obj)
+            }
+        })
+
+        //绑定工具栏事件
+        table.on('toolbar(user-table)', function (obj) {
+            if (obj.event === 'add') {
+                window.add()
+            } else if (obj.event === 'refresh') {
+                window.refresh()
+            } else if (obj.event === 'batchRemove') {
+                window.batchRemove(obj)
+            }
+        })
+
+        //绑定顶部查询事件
+        form.on('submit(query)', function (data) {
+            table.reload('user-table', {
+                where: data.field
+            })
+            return false
+        })
+
+        //绑定启用,禁用按钮事件
+        form.on('switch(enable)', function (obj) {
+            let operate
+            if (obj.elem.checked) {
+                operate = 'enable'
+            } else {
+                operate = 'disable'
+            }
+            console.log(this.value)
+            let loading = layer.load()
+            $.ajax({
+                url: MODULE_PATH + operate,
+                data: JSON.stringify({
+                    id: this.value
+                }),
+                dataType: 'json',
+                contentType: 'application/json',
+                beforeSend: function (XMLHttpRequest) {
+                    XMLHttpRequest.setRequestHeader('token', token);
+                },
+                type: 'put',
+                success: function (result) {
+                    layer.close(loading)
+                    if (result.success) {
+                        layer.msg(result.msg, {
+                            icon: 1,
+                            time: 1000
+                        })
+                    } else {
+                        layer.msg(result.msg, {
+                            icon: 2,
+                            time: 1000
+                        })
+                    }
+                }
+            })
+        })
+
+        window.add = function () {
+            layer.open({
+                type: 2,
+                title: '新增',
+                shade: 0.1,
+                area: ['600px', '80%'],
+                content: MODULE_PATH + 'add?token=' + token
+            })
+        }
+
+        window.edit = function (obj) {
+            layer.open({
+                type: 2,
+                title: '修改',
+                shade: 0.1,
+                area: ['600px', '80%'],
+                content: MODULE_PATH + 'edit/' + obj.data['id'] + '?token=' + token
+            })
+        }
+
+
+        window.remove = function (obj) {
+            layer.confirm('确定要删除该用户', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index)
+                let loading = layer.load()
+                $.ajax({
+                    url: MODULE_PATH + 'remove/' + obj.data['id'],
+                    dataType: 'json',
+                    beforeSend: function (XMLHttpRequest) {
+                        XMLHttpRequest.setRequestHeader('token', token);
+                    },
+                    type: 'delete',
+                    success: function (result) {
+                        layer.close(loading)
+                        console.log(result.success)
+                        if (result.success) {
+                            layer.msg(result.msg, {
+                                icon: 1,
+                                time: 1000
+                            }, function () {
+                                obj.del()
+                            })
+                        } else {
+                            layer.msg(result.msg, {
+                                icon: 2,
+                                time: 1000
+                            })
+                        }
+                    }
+                })
+            })
+        }
+
+        window.batchRemove = function (obj) {
+            let data = table.checkStatus(obj.config.id).data
+            if (data.length === 0) {
+                layer.msg('未选中数据', {
+                    icon: 3,
+                    time: 1000
+                })
+                return false
+            }
+            var ids = []
+            var hasCheck = table.checkStatus('user-table')
+            var hasCheckData = hasCheck.data
+            if (hasCheckData.length > 0) {
+                $.each(hasCheckData, function (index, element) {
+                    ids.push(element.id)
+                })
+            }
+            console.log(ids)
+            layer.confirm('确定要删除选中用户', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index)
+                let loading = layer.load()
+                $.ajax({
+
+                    url: MODULE_PATH + 'batchRemove',
+                    data: {
+                        ids: ids
+                    },
+                    dataType: 'json',
+                    beforeSend: function (XMLHttpRequest) {
+                        XMLHttpRequest.setRequestHeader('token', token);
+                    },
+                    type: 'delete',
+                    success: function (result) {
+                        layer.close(loading)
+                        if (result.success) {
+                            layer.msg(result.msg, {
+                                icon: 1,
+                                time: 1000
+                            }, function () {
+                                table.reload('user-table')
+                            })
+                        } else {
+                            layer.msg(result.msg, {
+                                icon: 2,
+                                time: 1000
+                            })
+                        }
+                    }
+                })
+            })
+        }
+
+        window.refresh = function () {
+            table.reload('user-table')
+        }
+
+
+    });
+</script>
+
+</html>
